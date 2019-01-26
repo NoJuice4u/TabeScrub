@@ -31,12 +31,23 @@ def parse(args):
                 fileJson = json.loads(readFile.read())
                 for shop in fileJson:
                     for reviewer in fileJson[shop]:
+                        priceColor = 0
                         if("price_min" in fileJson[shop][reviewer]):
-                            priceColor = int(math.sqrt(fileJson[shop][reviewer]["price_min"]) / 170 * 255)
-                        else:
-                            priceColor = 0
-                        if(priceColor > 255):
-                            priceColor = 255
+                            if(fileJson[shop][reviewer]["price_min"] >= 0):
+                                priceColor = 0
+                                greenStr = 128
+                            if(fileJson[shop][reviewer]["price_min"] > 2000):
+                                priceColor = 0
+                                greenStr = 255
+                            if(fileJson[shop][reviewer]["price_min"] > 3000):
+                                priceColor = 128
+                                greenStr = 255
+                            if(fileJson[shop][reviewer]["price_min"] > 5000):
+                                priceColor = 255
+                                greenStr = 255
+                            if(fileJson[shop][reviewer]["price_min"] > 10000):
+                                priceColor = 255
+                                greenStr = 0
 
                         for rating in fileJson[shop][reviewer]:
                             if(rating not in MAP_TABLE):
@@ -45,12 +56,12 @@ def parse(args):
                                 SHOP_INDEX[shop] = shopIndex
                                 shopIndex += 1
                             value = float(fileJson[shop][reviewer][rating])
-                            color = value * 51
+
                             if(value == -1):
                                 color = 0
                             if(value > 5):
                                 color = 255
-                            list.append(str(SHOP_INDEX[shop] * 0.01) + " " + str(value) + " " + str(j * 0.1) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(int(float(color))) + " " + str(0) + " ")
+                            list.append(str(SHOP_INDEX[shop] * 0.002) + " " + str(value) + " " + str(j * 1) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(greenStr) + " " + str(0) + " ")
             j += 1
 
     plyFile = open("data\\output.ply", 'w')

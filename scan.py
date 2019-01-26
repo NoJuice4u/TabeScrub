@@ -137,26 +137,6 @@ def parse(file, args):
         if(result < 20):
             break
 
-    plyFile = open("data\\output.ply", 'w')
-    plyFile.write("ply\n")
-    plyFile.write("format ascii 1.0\n")
-    plyFile.write("element vertex " + str(len(list)) + "\n")
-    plyFile.write("property float x\n")
-    plyFile.write("property float y\n")
-    plyFile.write("property float z\n")
-    plyFile.write("property float nx\n")
-    plyFile.write("property float ny\n")
-    plyFile.write("property float nz\n")
-    plyFile.write("property float intensity\n")
-    plyFile.write("property uchar red\n")
-    plyFile.write("property uchar green\n")
-    plyFile.write("property uchar blue\n")
-    plyFile.write("end_header\n")
-    for item in list:
-        plyFile.write(item + "\n")    
-
-    plyFile.close()
-    
     writeFile = open("data\\" + args.user + ".json", 'w', encoding="utf-8")
     writeFile.write(json.dumps(restaurant_tree, indent=4, separators=(',', ': '), ensure_ascii=False))
     writeFile.close()
