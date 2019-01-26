@@ -1,6 +1,7 @@
 from os import walk
 import argparse
 import requests
+import math
 import json
 import time
 import re
@@ -30,17 +31,26 @@ def parse(args):
                 fileJson = json.loads(readFile.read())
                 for shop in fileJson:
                     for reviewer in fileJson[shop]:
+                        if("price_min" in fileJson[shop][reviewer]):
+                            priceColor = int(math.sqrt(fileJson[shop][reviewer]["price_min"]) / 170 * 255)
+                        else:
+                            priceColor = 0
+                        if(priceColor > 255):
+                            priceColor = 255
+
                         for rating in fileJson[shop][reviewer]:
-                            if(rating == "price"):
+                            if(rating not in MAP_TABLE):
                                 continue
                             if(shop not in SHOP_INDEX):
                                 SHOP_INDEX[shop] = shopIndex
                                 shopIndex += 1
-                            value = fileJson[shop][reviewer][rating]
+                            value = float(fileJson[shop][reviewer][rating])
                             color = value * 51
                             if(value == -1):
                                 color = 0
-                            list.append(str(SHOP_INDEX[shop] * 0.02) + " " + str(value) + " " + str(j * 1) + " 0.5 0.5 0 1 255 " + str(int(float(color))) + " 0 ")
+                            if(value > 5):
+                                color = 255
+                            list.append(str(SHOP_INDEX[shop] * 0.01) + " " + str(value) + " " + str(j * 0.1) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(int(float(color))) + " " + str(0) + " ")
             j += 1
 
     plyFile = open("data\\output.ply", 'w')

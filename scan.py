@@ -76,7 +76,17 @@ def process(configString, restaurant_tree, list, page):
                 ratingPos = currentDiv.find(">", ratingPos) + 1
                 ratingEnd = currentDiv.find("<", ratingPos)
                 restaurant_price = currentDiv[ratingPos:ratingEnd]
-                restaurant_tree[restaurant_name][reviewer_name]["price"] = restaurant_price
+                price = restaurant_price.replace("￥", "").replace(",", "").split("～")
+                try:
+                    restaurant_tree[restaurant_name][reviewer_name]["price_min"] = int(price[0])
+                    try:
+                        restaurant_tree[restaurant_name][reviewer_name]["price_max"] = int(price[1])
+                    except:
+                        restaurant_tree[restaurant_name][reviewer_name]["price_max"] = int(price[0])
+                except:
+                    pass
+
+            # Date Scanner - rvw-item__visited-date
 
             # Rating Scanner
             tagPosition = currentDiv.find("class=\"js-bookmark\"")
@@ -122,7 +132,8 @@ def parse(file, args):
         #fileContents = file.read()
         result = process(contents, restaurant_tree, list, page)
         page += 1
-        print(result)
+        print("Page [" + str(page) + "].  Results Found: [" + str(result) + "]")
+
         if(result < 20):
             break
 
