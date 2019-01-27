@@ -18,7 +18,7 @@ SHOP_INDEX = {}
 
 def parse(args):
     restaurant_tree = {}
-    list = ["0 0 0 0.5 0.5 0 1 0 0 0 ", "0 1 0 0.5 0.5 0 1 0 0 0 ", "0 2 0 0.5 0.5 0 1 0 0 0 ", "0 3 0 0.5 0.5 0 1 0 0 0 ", "0 4 0 0.5 0.5 0 1 0 0 0 ", "0 5 0 0.5 0.5 0 1 0 0 0 "]
+    list = []
     shopIndex = 0
     j = 0
     
@@ -61,7 +61,13 @@ def parse(args):
                                 color = 0
                             if(value > 5):
                                 color = 255
-                            list.append(str(SHOP_INDEX[shop] * 0.002) + " " + str(value) + " " + str(j * 1) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(greenStr) + " " + str(0) + " ")
+                            list.append(str(SHOP_INDEX[shop] * 0.002) + " " + str(value) + " " + str(j * 0.25) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(greenStr) + " " + str(0) + " ")
+            list.append("0 0 " + str(j * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+            list.append("0 1 " + str(j * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+            list.append("0 2 " + str(j * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+            list.append("0 3 " + str(j * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+            list.append("0 4 " + str(j * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+            list.append("0 5 " + str(j * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
             j += 1
 
     plyFile = open("data\\output.ply", 'w')
