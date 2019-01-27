@@ -14,12 +14,17 @@ MAP_TABLE = {
 "rating_酒・ドリンク": 4
 }
 
+X_WIDTH = 0.02
+GROUP_WIDTH = 50
+
 SHOP_INDEX = {}
+SHOP_SORT_ORDER = {}
+REVIEWER_INDEX = {}
 
 def parse(args):
     restaurant_tree = {}
+    reviewerIndex = 0
     list = []
-    shopIndex = 0
     j = 0
     
     for (dirpath, dirnames, filenames) in walk("data\\"):
@@ -31,44 +36,90 @@ def parse(args):
                 fileJson = json.loads(readFile.read())
                 for shop in fileJson:
                     for reviewer in fileJson[shop]:
-                        priceColor = 0
-                        if("price_min" in fileJson[shop][reviewer]):
-                            if(fileJson[shop][reviewer]["price_min"] >= 0):
-                                priceColor = 0
-                                greenStr = 128
-                            if(fileJson[shop][reviewer]["price_min"] > 2000):
-                                priceColor = 0
-                                greenStr = 255
-                            if(fileJson[shop][reviewer]["price_min"] > 3000):
-                                priceColor = 128
-                                greenStr = 255
-                            if(fileJson[shop][reviewer]["price_min"] > 5000):
-                                priceColor = 255
-                                greenStr = 255
-                            if(fileJson[shop][reviewer]["price_min"] > 10000):
-                                priceColor = 255
-                                greenStr = 0
+                        if(reviewer not in REVIEWER_INDEX):
+                            REVIEWER_INDEX[reviewer] = reviewerIndex
 
-                        for rating in fileJson[shop][reviewer]:
-                            if(rating not in MAP_TABLE):
-                                continue
-                            if(shop not in SHOP_INDEX):
-                                SHOP_INDEX[shop] = shopIndex
-                                shopIndex += 1
-                            value = float(fileJson[shop][reviewer][rating])
+                            list.append("-1 0 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                            list.append("-1 1 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                            list.append("-1 2 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                            list.append("-1 3 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                            list.append("-1 4 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                            list.append("-1 5 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
 
-                            if(value == -1):
-                                color = 0
-                            if(value > 5):
-                                color = 255
-                            list.append(str(SHOP_INDEX[shop] * 0.002) + " " + str(value) + " " + str(j * 0.25) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(greenStr) + " " + str(0) + " ")
-            list.append("0 0 " + str(j * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-            list.append("0 1 " + str(j * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-            list.append("0 2 " + str(j * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-            list.append("0 3 " + str(j * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-            list.append("0 4 " + str(j * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-            list.append("0 5 " + str(j * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                            reviewerIndex += 1
+
+                        try:
+                            restaurant_tree[shop]
+                        except:
+                            restaurant_tree[shop] = {}
+
+                        try:
+                            restaurant_tree[shop][reviewer]
+                        except:
+                            restaurant_tree[shop][reviewer] = fileJson[shop][reviewer]
+
+                        if(shop not in SHOP_INDEX):
+                            SHOP_INDEX[shop] = 1
+                        else:
+                            SHOP_INDEX[shop] += 1
             j += 1
+
+    for shop in SHOP_INDEX:
+        try:
+            SHOP_SORT_ORDER[SHOP_INDEX[shop]].append(shop)
+        except:
+            SHOP_SORT_ORDER[SHOP_INDEX[shop]] = [shop]
+
+    xPos = 0
+    for depthId in sorted(SHOP_SORT_ORDER, reverse=True):
+        if(depthId == 1):
+            break
+        for shop in SHOP_SORT_ORDER[depthId]:
+            for reviewer in restaurant_tree[shop]:
+                priceColor = 0
+                greenStr = 0
+                if("price_min" in restaurant_tree[shop][reviewer]):
+                    if(restaurant_tree[shop][reviewer]["price_min"] >= 0):
+                        priceColor = 0
+                        greenStr = 128
+                    if(restaurant_tree[shop][reviewer]["price_min"] > 2000):
+                        priceColor = 0
+                        greenStr = 255
+                    if(restaurant_tree[shop][reviewer]["price_min"] > 3000):
+                        priceColor = 128
+                        greenStr = 255
+                    if(restaurant_tree[shop][reviewer]["price_min"] > 5000):
+                        priceColor = 255
+                        greenStr = 255
+                    if(restaurant_tree[shop][reviewer]["price_min"] > 10000):
+                        priceColor = 255
+                        greenStr = 0
+
+                # print(str(len(restaurant_tree[shop])) + " : " + shop + "-" + reviewer + "::" + str(restaurant_tree[shop][reviewer]))
+                list.append(str(xPos * X_WIDTH) + " " + str(-1) + " " + str(REVIEWER_INDEX[reviewer] * 0.25) + " 0.5 0.5 0 1 " + str(255) + " " + str(0) + " " + str(0) + " ")
+
+                for rating in restaurant_tree[shop][reviewer]:
+                    if(rating not in MAP_TABLE):
+                        continue
+
+                    blue = 0
+                    overallOffset = 0
+                    if(rating == "overall"):
+                        blue = 255
+                        overallOffset = 0.15
+
+                    value = float(restaurant_tree[shop][reviewer][rating])
+
+                    if(value == -1):
+                        value = -0.5
+                        color = 0
+                    if(value > 5):
+                        color = 255
+
+                list.append(str(xPos * X_WIDTH) + " " + str(value) + " " + str((REVIEWER_INDEX[reviewer] * 0.25) + overallOffset) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(greenStr) + " " + str(blue) + " ")
+            # print(shop.ljust(30) + " :: " + str(len(restaurant_tree[shop])))
+            xPos += 1
+        xPos += GROUP_WIDTH
 
     plyFile = open("data\\output.ply", 'w')
     plyFile.write("ply\n")
