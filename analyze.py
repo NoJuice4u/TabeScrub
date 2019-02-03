@@ -6,6 +6,7 @@ import json
 import time
 import re
 
+MEALTIME_TABLE = {"lunch", "dinner"}
 MAP_TABLE = {
 "overall": 0,
 "rating_サービス": 1,
@@ -36,32 +37,33 @@ def parse(args):
                 fileJson = json.loads(readFile.read())
                 for shop in fileJson:
                     for reviewer in fileJson[shop]:
-                        if(reviewer not in REVIEWER_INDEX):
-                            REVIEWER_INDEX[reviewer] = reviewerIndex
+                        for mealTime in fileJson[shop][reviewer]:
+                            if(reviewer not in REVIEWER_INDEX):
+                                REVIEWER_INDEX[reviewer] = reviewerIndex
 
-                            list.append("-1 0 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-                            list.append("-1 1 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-                            list.append("-1 2 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-                            list.append("-1 3 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-                            list.append("-1 4 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-                            list.append("-1 5 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                                list.append("-1 0 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                                list.append("-1 1 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                                list.append("-1 2 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                                list.append("-1 3 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                                list.append("-1 4 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                                list.append("-1 5 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
 
-                            reviewerIndex += 1
+                                reviewerIndex += 1
 
-                        try:
-                            restaurant_tree[shop]
-                        except:
-                            restaurant_tree[shop] = {}
+                            try:
+                                restaurant_tree[shop]
+                            except:
+                                restaurant_tree[shop] = {}
 
-                        try:
-                            restaurant_tree[shop][reviewer]
-                        except:
-                            restaurant_tree[shop][reviewer] = fileJson[shop][reviewer]
+                            try:
+                                restaurant_tree[shop][reviewer]
+                            except:
+                                restaurant_tree[shop][reviewer] = fileJson[shop][reviewer]
 
-                        if(shop not in SHOP_INDEX):
-                            SHOP_INDEX[shop] = 1
-                        else:
-                            SHOP_INDEX[shop] += 1
+                            if(shop not in SHOP_INDEX):
+                                SHOP_INDEX[shop] = 1
+                            else:
+                                SHOP_INDEX[shop] += 1
             j += 1
 
     for shop in SHOP_INDEX:
@@ -78,45 +80,50 @@ def parse(args):
             for reviewer in restaurant_tree[shop]:
                 priceColor = 0
                 greenStr = 0
-                if("price_min" in restaurant_tree[shop][reviewer]):
-                    if(restaurant_tree[shop][reviewer]["price_min"] >= 0):
-                        priceColor = 0
-                        greenStr = 128
-                    if(restaurant_tree[shop][reviewer]["price_min"] > 2000):
-                        priceColor = 0
-                        greenStr = 255
-                    if(restaurant_tree[shop][reviewer]["price_min"] > 3000):
-                        priceColor = 128
-                        greenStr = 255
-                    if(restaurant_tree[shop][reviewer]["price_min"] > 5000):
-                        priceColor = 255
-                        greenStr = 255
-                    if(restaurant_tree[shop][reviewer]["price_min"] > 10000):
-                        priceColor = 255
-                        greenStr = 0
 
                 # print(str(len(restaurant_tree[shop])) + " : " + shop + "-" + reviewer + "::" + str(restaurant_tree[shop][reviewer]))
                 list.append(str(xPos * X_WIDTH) + " " + str(-1) + " " + str(REVIEWER_INDEX[reviewer] * 0.25) + " 0.5 0.5 0 1 " + str(255) + " " + str(0) + " " + str(0) + " ")
 
-                for rating in restaurant_tree[shop][reviewer]:
-                    if(rating not in MAP_TABLE):
+                for mealTime in MEALTIME_TABLE:
+                    if(mealTime not in restaurant_tree[shop][reviewer]):
                         continue
 
-                    blue = 0
-                    overallOffset = 0
-                    if(rating == "overall"):
-                        blue = 255
-                        overallOffset = 0.15
+                    if("price_min" in restaurant_tree[shop][reviewer][mealTime]):
+                        if(restaurant_tree[shop][reviewer][mealTime]["price_min"] >= 0):
+                            priceColor = 0
+                            greenStr = 128
+                        if(restaurant_tree[shop][reviewer][mealTime]["price_min"] > 2000):
+                            priceColor = 0
+                            greenStr = 255
+                        if(restaurant_tree[shop][reviewer][mealTime]["price_min"] > 3000):
+                            priceColor = 128
+                            greenStr = 255
+                        if(restaurant_tree[shop][reviewer][mealTime]["price_min"] > 5000):
+                            priceColor = 255
+                            greenStr = 255
+                        if(restaurant_tree[shop][reviewer][mealTime]["price_min"] > 10000):
+                            priceColor = 255
+                            greenStr = 0
 
-                    value = float(restaurant_tree[shop][reviewer][rating])
+                    for rating in restaurant_tree[shop][reviewer][mealTime]:
+                        if(rating not in MAP_TABLE):
+                            continue
 
-                    if(value == -1):
-                        value = -0.5
-                        color = 0
-                    if(value > 5):
-                        color = 255
+                        blue = 0
+                        overallOffset = 0
+                        if(rating == "overall"):
+                            blue = 255
+                            overallOffset = 0.15
 
-                list.append(str(xPos * X_WIDTH) + " " + str(value) + " " + str((REVIEWER_INDEX[reviewer] * 0.25) + overallOffset) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(greenStr) + " " + str(blue) + " ")
+                        value = float(restaurant_tree[shop][reviewer][mealTime][rating])
+
+                        if(value == -1):
+                            value = -0.5
+                            color = 0
+                        if(value > 5):
+                            color = 255
+
+                        list.append(str(xPos * X_WIDTH) + " " + str(value) + " " + str((REVIEWER_INDEX[reviewer] * 0.25) + overallOffset) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(greenStr) + " " + str(blue) + " ")
             # print(shop.ljust(30) + " :: " + str(len(restaurant_tree[shop])))
             xPos += 1
         xPos += GROUP_WIDTH

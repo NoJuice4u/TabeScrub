@@ -11,6 +11,10 @@ TAG_MAP = {
     "class=\"js-bookmark\"": "1",
     "class=\"js-bookmark\"": "2"}
 
+mealTimes = {"lunch", "dinner"}
+
+SEGMENT_MAP = []
+
 parser = argparse.ArgumentParser(description='Tabelog User Review Scanner')
 parser.add_argument('--user', required=True)
 parser.add_argument('--test', required=False, default=False, type=bool)
@@ -34,13 +38,14 @@ def process(configString, restaurant_tree, list, page):
     reviewer_name = None
     restaurant_rating = None
     treeItem = {}
-    
+    limit = 0    
 
-    # START WRAPPER: class="timeline js-timeline-content-wrap"
+    # Reviewer Scanner
+    ratingPos = configString.find("rvwr-nickname fs16")
+    ratingPos = configString.find(">", ratingPos) + 1
+    ratingEnd = configString.find("<", ratingPos)
+    reviewer_name = configString[ratingPos:ratingEnd].strip()
 
-    # 1. Find DIV
-    # 2. Find the associated tag from Map
-    limit = 0
     while(True):
         indexPos = configString.find(TAG_SEARCH, pos)
         if(indexPos == -1):
@@ -49,145 +54,128 @@ def process(configString, restaurant_tree, list, page):
         
         if(configString[indexPos-1] == "<"):
             braceCount += 1
-            positionMap.append(indexPos)
 
-            tagPosition = configString.find("js-bookmark", indexPos)
+            tagPosition = configString.find("class=\"js-bookmark\"", indexPos, indexPos+127)
             if(tagPosition > 0):
-                ratingPos = configString.find("data-interested-review-id", tagPosition)
-                if(ratingPos > 0):
-                    ratingPos = configString.find("=\"", ratingPos) + 2
-                    ratingEnd = configString.find("\"", ratingPos)
-                    review_id = configString[ratingPos:ratingEnd]
-
+                braceCount = 0
+                positionMap.append({"start": tagPosition - 5, "end": -1})
+                pos = tagPosition + 2
 
         elif(configString[indexPos+len(TAG_SEARCH)] == ">"):
             limit += 1
             braceCount -= 1
-            startPos = positionMap.pop() - 1
+            if(braceCount == 1 and len(positionMap) > 0):
+                positionMap[len(positionMap)-1]["end"] = indexPos + 4
             endPos = indexPos + len(TAG_SEARCH) + 1
-            
-            currentDiv = configString[startPos:endPos].replace("<span>/</span>", "/")
 
-            # Reviewer Scanner
-            tagPosition = currentDiv.find("class=\"header-contents__info header-contents__info--s\"")
-            if(tagPosition > 0):
-                ratingPos = currentDiv.find("rvwr-nickname fs16")
-                ratingPos = currentDiv.find(">", ratingPos) + 1
-                ratingEnd = currentDiv.find("<", ratingPos)
-                reviewer_name = currentDiv[ratingPos:ratingEnd].strip()
+    i = 0
+    for item in positionMap:
+        segment = configString[item["start"]:item["end"]]
+        SEGMENT_MAP.append(segment)
+        ratingPos = segment.find("data-interested-review-id")
+        ratingPos = segment.find("=\"", ratingPos) + 2
+        ratingEnd = segment.find("\"", ratingPos)
+        review_id = segment[ratingPos:ratingEnd]
+        treeItem = {}
+        treeItem["review_id"] = review_id
 
-            # Name Scanner
-            tagPosition = currentDiv.find("class=\"js-bookmark\"")
-            if(tagPosition < 10 and tagPosition > 0):
-                i += 1
-                restaurant_rating = None
-                
-                if(restaurant_name is not None):
-                    restaurant_tree[restaurant_name] = {}
-                    restaurant_tree[restaurant_name] = {"url": restaurant_url}
-                    restaurant_tree[restaurant_name][reviewer_name] = {}
-                    restaurant_tree[restaurant_name][reviewer_name] = treeItem
-                    treeItem = {}
-                    treeItem["review_id"] = review_id
+        tagPosition = segment.find("class=\"js-bookmark\"")
+        if(tagPosition < 10 and tagPosition > 0):
+            i += 1
+            restaurant_rating = None
+            ratingPos = segment.find("rvw-item__rst-name")
 
-                ratingPos = currentDiv.find("rvw-item__rst-name")
+            linkStart = segment.find("href=", ratingPos) + 6
+            linkEnd = segment.find("\"", linkStart)
+            restaurant_url = segment[linkStart:linkEnd]
 
-                linkStart = currentDiv.find("href=", ratingPos) + 6
-                linkEnd = currentDiv.find("\"", linkStart)
-                restaurant_url = currentDiv[linkStart:linkEnd]
+            ratingPos = segment.find(">", ratingPos) + 1
+            ratingEnd = segment.find("<", ratingPos)
+            restaurant_name = segment[ratingPos:ratingEnd]
 
-                ratingPos = currentDiv.find(">", ratingPos) + 1
-                ratingEnd = currentDiv.find("<", ratingPos)
-                restaurant_name = currentDiv[ratingPos:ratingEnd]
+            restaurant_tree[restaurant_name] = {}
+            restaurant_tree[restaurant_name][reviewer_name] = {}
+            restaurant_tree[restaurant_name][reviewer_name] = treeItem
+            treeItem["url"] = restaurant_url
 
             # Category Scanner
-            tagPosition = currentDiv.find("class=\"rvw-item__rst-name\"")
-            if(tagPosition > 0):
-                ratingPos = currentDiv.find("rvw-item__rst-area-catg")
-                ratingPos = currentDiv.find(">", ratingPos) + 1
-                ratingEnd = currentDiv.find("<", ratingPos)
+            tagPosition = segment.find("class=\"rvw-item__rst-name\"")
+            ratingPos = segment.find("rvw-item__rst-area-catg")
+            ratingPos = segment.find(">", ratingPos) + 1
+            ratingEnd = segment.find("<", ratingPos)
 
-                categories = currentDiv[ratingPos:ratingEnd].replace("（", "").replace("）", "").strip().split("、")
-                treeItem["categories"] = categories
+            categories = segment[ratingPos:ratingEnd].replace("（", "").replace("）", "").strip().split("、")
+            treeItem["categories"] = categories
 
-            if(restaurant_name is not None and reviewer_name is not None):
-                # Time Scanner
-                tagPosition = currentDiv.find("class=\"c-rating__time c-rating__time--lunch\"")
+            # Lunch Scanner
+            for mealTime in mealTimes:
+                tagPosition = segment.find("class=\"c-rating__time c-rating__time--" + mealTime + "\"")
                 if(tagPosition > 0):
-                    treeItem["review_time"] = "lunch"
-                else:
-                    treeItem["review_time"] = "dinner"
-                
-                # Rating Scanner
-                tagPosition = currentDiv.find("class=\"js-bookmark\"")
-                if(tagPosition < 10 and tagPosition > 0):
-                    ratingPos = currentDiv.find("c-rating__val")
-                    ratingPos = currentDiv.find(">", ratingPos) + 1
-                    ratingEnd = currentDiv.find("<", ratingPos)
-                    restaurant_rating = currentDiv[ratingPos:ratingEnd]
+
+                    if(mealTime not in treeItem):
+                        treeItem[mealTime] = {}
+
+                    # tagPosition = segment.find("class=\"js-bookmark\"", tagPosition)
+                    ratingPos = segment.find("c-rating__val", tagPosition)
+                    ratingPos = segment.find(">", ratingPos) + 1
+                    ratingEnd = segment.find("<", ratingPos)
+                    restaurant_rating = segment[ratingPos:ratingEnd]
+
                     try:
-                        treeItem["overall"] = float(restaurant_rating)
+                        treeItem[mealTime]["overall"] = float(restaurant_rating)
                     except:
-                        treeItem["overall"] = -1
+                        treeItem[mealTime]["overall"] = -1
 
-                # Date Scanner
-                tagPosition = currentDiv.find("class=\"rvw-item__date rvw-item__date--rvwlst\"")
-                if(tagPosition < 10 and tagPosition > 0):
-                    ratingPos = currentDiv.find("rvw-item__visited-date")
-                    ratingPos = currentDiv.find(">", ratingPos) + 1
-                    ratingEnd = currentDiv.find("<", ratingPos)
-                    visit_date = currentDiv[ratingPos:ratingEnd].replace("訪問", "")
-                    treeItem["visit_date"] = visit_date
-
-
-                # Price Scanner
-                tagPosition = currentDiv.find("class=\"js-bookmark\"")
-                if(tagPosition < 10 and tagPosition > 0):
-                    ratingPos = currentDiv.find("c-rating__val rvw-item__usedprice-price")
-                    ratingPos = currentDiv.find(">", ratingPos) + 1
-                    ratingEnd = currentDiv.find("<", ratingPos)
-                    restaurant_price = currentDiv[ratingPos:ratingEnd]
-                    price = restaurant_price.replace("￥", "").replace(",", "").split("～")
-                    try:
-                        treeItem["price_min"] = int(price[0])
-                        try:
-                            treeItem["price_max"] = int(price[1])
-                        except:
-                            treeItem["price_max"] = int(price[0])
-                    except:
-                        pass
-
-                # Date Scanner - rvw-item__visited-date
-
-                # Rating Scanner
-                tagPosition = currentDiv.find("class=\"js-bookmark\"")
-                if(tagPosition < 10 and tagPosition > 0):
-                    xRatingPos = 0
+                    xRatingPos = tagPosition
                     while(True):
-                        xRatingPos = currentDiv.find("rvw-item__ratings-dtlscore-line", xRatingPos)
+                        xRatingPos = segment.find("rvw-item__ratings-dtlscore-line", xRatingPos)
                         if(xRatingPos == -1):
                             break
-                        xRatingPos = currentDiv.find(">", xRatingPos) + 1
-                        xRatingEnd = currentDiv.find("<", xRatingPos)
+                        xRatingPos = segment.find(">", xRatingPos) + 1
+                        xRatingEnd = segment.find("<", xRatingPos)
                     
                         ratingNameStart = xRatingEnd + 7
-                        ratingNameEnd = currentDiv.find("<", ratingNameStart)
-                        ratingName = currentDiv[ratingNameStart:ratingNameEnd].strip()
+                        ratingNameEnd = segment.find("<", ratingNameStart)
+                        ratingName = segment[ratingNameStart:ratingNameEnd].strip()
                     
-                        ratingPos = currentDiv.find("rvw-item__ratings-dtlscore-score", ratingNameStart)
-                        ratingPos = currentDiv.find(">", ratingPos) + 1
-                        ratingEnd = currentDiv.find("<", ratingPos)
-                        restaurant_subrating = currentDiv[ratingPos:ratingEnd]
+                        ratingPos = segment.find("rvw-item__ratings-dtlscore-score", ratingNameStart)
+                        ratingPos = segment.find(">", ratingPos) + 1
+                        ratingEnd = segment.find("<", ratingPos)
+                        restaurant_subrating = segment[ratingPos:ratingEnd]
 
                         if(restaurant_rating is not None):
                             try:
-                                list.append(str(((page * 20) + i) * 0.02) + " " + currentDiv[ratingPos:ratingEnd] + " 0 0.5 0.5 0 1 255 " + str(int(float(currentDiv[ratingPos:ratingEnd]) * 51)) + " 0 ")
-                                treeItem["rating_" + ratingName] = float(currentDiv[ratingPos:ratingEnd])
+                                list.append(str(((page * 20) + i) * 0.02) + " " + segment[ratingPos:ratingEnd] + " 0 0.5 0.5 0 1 255 " + str(int(float(segment[ratingPos:ratingEnd]) * 51)) + " 0 ")
+                                treeItem[mealTime]["rating_" + ratingName] = float(segment[ratingPos:ratingEnd])
                             except:
                                 pass
+
+                # Price Scanner
+                tagPosition = segment.find("c-rating__time c-rating__time--" + mealTime + " rvw-item__usedprice-time")
+                ratingPos = segment.find("c-rating__val rvw-item__usedprice-price", tagPosition)
+                ratingPos = segment.find(">", ratingPos) + 1
+                ratingEnd = segment.find("<", ratingPos)
+                restaurant_price = segment[ratingPos:ratingEnd]
+                price = restaurant_price.replace("￥", "").replace(",", "").split("～")
+                try:
+                    treeItem[mealTime]["price_min"] = int(price[0])
+                    try:
+                        treeItem[mealTime]["price_max"] = int(price[1])
+                    except:
+                        treeItem[mealTime]["price_max"] = int(price[0])
+                except:
+                    pass
+
+            # Date Scanner
+            tagPosition = segment.find("class=\"rvw-item__date rvw-item__date--rvwlst\"")
+            ratingPos = segment.find("rvw-item__visited-date")
+            ratingPos = segment.find(">", ratingPos) + 1
+            ratingEnd = segment.find("<", ratingPos)
+            visit_date = segment[ratingPos:ratingEnd].replace("訪問", "")
+            treeItem["visit_date"] = visit_date
+
+            # Date Scanner - rvw-item__visited-date
             
-            pos = endPos
-        pos += 1
     return i
 
 def parse(file, args):
