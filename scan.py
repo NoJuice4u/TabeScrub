@@ -13,9 +13,10 @@ TAG_MAP = {
 
 parser = argparse.ArgumentParser(description='Tabelog User Review Scanner')
 parser.add_argument('--user', required=True)
+parser.add_argument('--test', required=False, default=False, type=bool)
 
 args = parser.parse_args()
-                    
+
 # Go through every byte in the file.  This is to extract the braces to isolate each item
 # Creates a dictionary to allow traversal.  Ignore items in blackList due to difficulty of parsing.
 def process(configString, restaurant_tree, list, page):
@@ -49,13 +50,23 @@ def process(configString, restaurant_tree, list, page):
         if(configString[indexPos-1] == "<"):
             braceCount += 1
             positionMap.append(indexPos)
+
+            tagPosition = configString.find("js-bookmark", indexPos)
+            if(tagPosition > 0):
+                ratingPos = configString.find("data-interested-review-id", tagPosition)
+                if(ratingPos > 0):
+                    ratingPos = configString.find("=\"", ratingPos) + 2
+                    ratingEnd = configString.find("\"", ratingPos)
+                    review_id = configString[ratingPos:ratingEnd]
+
+
         elif(configString[indexPos+len(TAG_SEARCH)] == ">"):
             limit += 1
             braceCount -= 1
             startPos = positionMap.pop() - 1
             endPos = indexPos + len(TAG_SEARCH) + 1
             
-            currentDiv = configString[startPos:endPos]
+            currentDiv = configString[startPos:endPos].replace("<span>/</span>", "/")
 
             # Reviewer Scanner
             tagPosition = currentDiv.find("class=\"header-contents__info header-contents__info--s\"")
@@ -73,14 +84,31 @@ def process(configString, restaurant_tree, list, page):
                 
                 if(restaurant_name is not None):
                     restaurant_tree[restaurant_name] = {}
+                    restaurant_tree[restaurant_name] = {"url": restaurant_url}
                     restaurant_tree[restaurant_name][reviewer_name] = {}
                     restaurant_tree[restaurant_name][reviewer_name] = treeItem
                     treeItem = {}
+                    treeItem["review_id"] = review_id
 
                 ratingPos = currentDiv.find("rvw-item__rst-name")
+
+                linkStart = currentDiv.find("href=", ratingPos) + 6
+                linkEnd = currentDiv.find("\"", linkStart)
+                restaurant_url = currentDiv[linkStart:linkEnd]
+
                 ratingPos = currentDiv.find(">", ratingPos) + 1
                 ratingEnd = currentDiv.find("<", ratingPos)
                 restaurant_name = currentDiv[ratingPos:ratingEnd]
+
+            # Category Scanner
+            tagPosition = currentDiv.find("class=\"rvw-item__rst-name\"")
+            if(tagPosition > 0):
+                ratingPos = currentDiv.find("rvw-item__rst-area-catg")
+                ratingPos = currentDiv.find(">", ratingPos) + 1
+                ratingEnd = currentDiv.find("<", ratingPos)
+
+                categories = currentDiv[ratingPos:ratingEnd].replace("（", "").replace("）", "").strip().split("、")
+                treeItem["categories"] = categories
 
             if(restaurant_name is not None and reviewer_name is not None):
                 # Time Scanner
@@ -101,6 +129,16 @@ def process(configString, restaurant_tree, list, page):
                         treeItem["overall"] = float(restaurant_rating)
                     except:
                         treeItem["overall"] = -1
+
+                # Date Scanner
+                tagPosition = currentDiv.find("class=\"rvw-item__date rvw-item__date--rvwlst\"")
+                if(tagPosition < 10 and tagPosition > 0):
+                    ratingPos = currentDiv.find("rvw-item__visited-date")
+                    ratingPos = currentDiv.find(">", ratingPos) + 1
+                    ratingEnd = currentDiv.find("<", ratingPos)
+                    visit_date = currentDiv[ratingPos:ratingEnd].replace("訪問", "")
+                    treeItem["visit_date"] = visit_date
+
 
                 # Price Scanner
                 tagPosition = currentDiv.find("class=\"js-bookmark\"")
@@ -157,18 +195,24 @@ def parse(file, args):
 
     page = 1
     list = ["0 0 0 0.5 0.5 0 1 0 0 0 ", "0 1 0 0.5 0.5 0 1 0 0 0 ", "0 2 0 0.5 0.5 0 1 0 0 0 ", "0 3 0 0.5 0.5 0 1 0 0 0 ", "0 4 0 0.5 0.5 0 1 0 0 0 ", "0 5 0 0.5 0.5 0 1 0 0 0 "]
-    while(True):
-        r = requests.get("https://tabelog.com/rvwr/" + args.user + "/reviewed_restaurants/list/?bookmark_type=1&sk=&sw=&Srt=D&SrtT=mfav&review_content_exist=0&PG=" + str(page))
-        contents = r.text
-        
-        #file = open(file, 'r', encoding='utf-8')
-        #fileContents = file.read()
-        result = process(contents, restaurant_tree, list, page)
-        page += 1
-        print("Page [" + str(page) + "].  Results Found: [" + str(result) + "]")
+    if(args.test == True):
+        file = open("data/test.html", 'r', encoding='utf-8')
+        contents = file.read()
 
-        if(result < 20):
-            break
+        result = process(contents, restaurant_tree, list, page)
+    else:
+        while(True):
+            r = requests.get("https://tabelog.com/rvwr/" + args.user + "/reviewed_restaurants/list/?bookmark_type=1&sk=&sw=&Srt=D&SrtT=mfav&review_content_exist=0&PG=" + str(page))
+            contents = r.text
+        
+            #file = open(file, 'r', encoding='utf-8')
+            #fileContents = file.read()
+            result = process(contents, restaurant_tree, list, page)
+            page += 1
+            print("Page [" + str(page) + "].  Results Found: [" + str(result) + "]")
+
+            if(result < 20):
+                break
 
     writeFile = open("data\\" + args.user + ".json", 'w', encoding="utf-8")
     writeFile.write(json.dumps(restaurant_tree, indent=4, separators=(',', ': '), ensure_ascii=False))
