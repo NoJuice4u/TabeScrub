@@ -60,10 +60,10 @@ def parse(args):
                             except:
                                 restaurant_tree[shop][reviewer] = fileJson[shop][reviewer]
 
-                            if(shop not in SHOP_INDEX):
-                                SHOP_INDEX[shop] = 1
-                            else:
-                                SHOP_INDEX[shop] += 1
+                    if(shop not in SHOP_INDEX):
+                        SHOP_INDEX[shop] = 1
+                    else:
+                        SHOP_INDEX[shop] += 1
             j += 1
 
     for shop in SHOP_INDEX:
@@ -74,7 +74,7 @@ def parse(args):
 
     xPos = 0
     for depthId in sorted(SHOP_SORT_ORDER, reverse=True):
-        if(depthId == 1):
+        if(depthId <= 1):
             break
         for shop in SHOP_SORT_ORDER[depthId]:
             for reviewer in restaurant_tree[shop]:
@@ -112,7 +112,6 @@ def parse(args):
                         blue = 0
                         overallOffset = 0
                         if(rating == "overall"):
-                            blue = 255
                             overallOffset = 0.15
 
                         value = float(restaurant_tree[shop][reviewer][mealTime][rating])
