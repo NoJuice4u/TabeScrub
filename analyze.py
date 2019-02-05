@@ -31,6 +31,8 @@ def parse(args):
     for (dirpath, dirnames, filenames) in walk("data\\"):
     
         for file in filenames:
+            if(file == "restaurantInfo.json"):
+                continue
             if(file[-5:] == '.json'):
                 readFile = open("data\\" + file, encoding="utf-8")
                 
@@ -60,10 +62,10 @@ def parse(args):
                             except:
                                 restaurant_tree[shop][reviewer] = fileJson[shop][reviewer]
 
-                            if(shop not in SHOP_INDEX):
-                                SHOP_INDEX[shop] = 1
-                            else:
-                                SHOP_INDEX[shop] += 1
+                    if(shop not in SHOP_INDEX):
+                        SHOP_INDEX[shop] = 1
+                    else:
+                        SHOP_INDEX[shop] += 1
             j += 1
 
     for shop in SHOP_INDEX:
@@ -73,10 +75,20 @@ def parse(args):
             SHOP_SORT_ORDER[SHOP_INDEX[shop]] = [shop]
 
     xPos = 0
+
+    restaurantInfo = open("data\\restaurantInfo.json", "a+", encoding="utf-8")
+    restaurantInfo.seek(0)
+    restaurantInfoJson = json.loads(restaurantInfo.read())
     for depthId in sorted(SHOP_SORT_ORDER, reverse=True):
         if(depthId == 1):
             break
         for shop in SHOP_SORT_ORDER[depthId]:
+            #r = requests.get("https://tabelog.com/rvwr/" + args.user + "/reviewed_restaurants/list/?bookmark_type=1&sk=&sw=&Srt=D&SrtT=mfav&review_content_exist=0&PG=" + str(page))
+            #contents = r.text
+        
+            if shop not in restaurantInfoJson:
+                restaurantInfoJson[shop] = True
+                # IND
             for reviewer in restaurant_tree[shop]:
                 priceColor = 0
                 greenStr = 0
@@ -127,6 +139,9 @@ def parse(args):
             # print(shop.ljust(30) + " :: " + str(len(restaurant_tree[shop])))
             xPos += 1
         xPos += GROUP_WIDTH
+
+    restaurantInfo.truncate(0)
+    restaurantInfo.write(json.dumps(restaurantInfoJson, indent=4, separators=(',', ': '), ensure_ascii=False))
 
     plyFile = open("data\\output.ply", 'w')
     plyFile.write("ply\n")
