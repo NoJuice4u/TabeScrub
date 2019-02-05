@@ -19,6 +19,7 @@
     <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="parser_restaurant.py" />
     <Compile Include="scan.py" />
     <Compile Include="analyze.py" />
     <Compile Include="view.py" />
