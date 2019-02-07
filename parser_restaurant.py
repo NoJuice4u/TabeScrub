@@ -2,17 +2,27 @@ import requests
 
 TAG_SEARCH = "div"
 
-def parseRestaurant(url):
-    file = open("data/restaurant.html", 'r', encoding='utf-8')
-    contents = file.read()
+def parseRestaurantFile(file):
+    file = open(file, 'r', encoding='utf-8')
+    content = file.read()
     
-    coordsStart = contents.find("center=") + 7
-    coordsEnd = contents.find("&amp;", coordsStart)
+    return findCoords(content)
 
-    coords = contents[coordsStart:coordsEnd].split(",")
-    print(coords)
+def parseRestaurantURL(url):
+    print("PROCESSING: " + url)
+    r = requests.get(url)
+    content = r.text
 
-    resultTable = parseDivs(contents)
+    return findCoords(content)
+
+def findCoords(content):
+    coordsStart = content.find("center=") + 7
+    coordsEnd = content.find("&amp;", coordsStart)
+
+    coords = content[coordsStart:coordsEnd].split(",")
+    return {"longitude": coords[0], "latitude": coords[1]}
+
+    # resultTable = parseDivs(contents)
 
 def parseDivs(contents):
     pos = 0
@@ -44,4 +54,6 @@ def parseDivs(contents):
     return positionMap
 
 if __name__ == "__main__":
-    parseRestaurant("beef")
+    result = parseRestaurantFile("data/restaurant.html")
+    # result = parseRestaurantURL("https://tabelog.com/tokyo/A1314/A131401/13094789/")
+    print(result)

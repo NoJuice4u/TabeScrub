@@ -1,10 +1,12 @@
 from os import walk
 import argparse
+import math
 import requests
 import math
 import json
 import time
 import re
+import parser_restaurant
 
 MEALTIME_TABLE = {"lunch", "dinner"}
 MAP_TABLE = {
@@ -15,12 +17,15 @@ MAP_TABLE = {
 "rating_酒・ドリンク": 4
 }
 
+COORDINATES = {"longitude": 35.6863146, "latitude": 139.6877746}
+
 X_WIDTH = 0.02
 GROUP_WIDTH = 50
 
 SHOP_INDEX = {}
 SHOP_SORT_ORDER = {}
 REVIEWER_INDEX = {}
+distanceIndex = {}
 
 def parse(args):
     restaurant_tree = {}
@@ -83,13 +88,12 @@ def parse(args):
         if(depthId <= 1):
             break
         for shop in SHOP_SORT_ORDER[depthId]:
-            #r = requests.get("https://tabelog.com/rvwr/" + args.user + "/reviewed_restaurants/list/?bookmark_type=1&sk=&sw=&Srt=D&SrtT=mfav&review_content_exist=0&PG=" + str(page))
-            #contents = r.text
-        
-            if shop not in restaurantInfoJson:
-                restaurantInfoJson[shop] = True
-                # IND
             for reviewer in restaurant_tree[shop]:
+                if shop not in restaurantInfoJson:
+                    result = parser_restaurant.parseRestaurantURL(restaurant_tree[shop][reviewer]['url'])
+                    restaurantInfoJson[shop] = result
+                    time.sleep(1)
+                    # IND
                 priceColor = 0
                 greenStr = 0
 
@@ -136,9 +140,42 @@ def parse(args):
 
                         list.append(str(xPos * X_WIDTH) + " " + str(value) + " " + str((REVIEWER_INDEX[reviewer] * 0.25) + overallOffset) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(greenStr) + " " + str(blue) + " ")
             # print(shop.ljust(30) + " :: " + str(len(restaurant_tree[shop])))
+
+            distance = getVectorDistance(restaurantInfoJson[shop], COORDINATES)
+            reviewer = next(iter(restaurant_tree[shop].keys()))
+            distanceIndex[distance] = { "url": restaurant_tree[shop][reviewer]['url'], "name": shop}
             xPos += 1
         xPos += GROUP_WIDTH
 
+    for x in sorted(distanceIndex):
+        lunch_review = []
+        lunch_price_min = []
+        lunch_price_max = []
+        dinner_review = []
+        dinner_price_min = []
+        dinner_price_max = []
+
+        shop = distanceIndex[x]['name']
+        for rvwr in restaurant_tree[shop]:
+            try:
+                if("lunch" in restaurant_tree[shop][rvwr]):
+                    lunch_review.append(restaurant_tree[shop][rvwr]['lunch']['overall'])
+                    lunch_price_min.append(restaurant_tree[shop][rvwr]['lunch']['price_min'])
+                    lunch_price_max.append(restaurant_tree[shop][rvwr]['lunch']['price_max'])
+                elif("dinner" in restaurant_tree[shop][rvwr]):
+                    dinner_review.append(restaurant_tree[shop][rvwr]['dinner']['overall'])
+                    dinner_price_min.append(restaurant_tree[shop][rvwr]['dinner']['price_min'])
+                    dinner_price_max.append(restaurant_tree[shop][rvwr]['dinner']['price_max'])
+                else:
+                    pass
+            except:
+                pass
+        distanceIndex[x]['lunch'] = lunch_review
+        distanceIndex[x]['dinner'] = dinner_review
+        distanceIndex[x]['lmax'] = lunch_price_max
+        distanceIndex[x]['dmax'] = dinner_price_max
+
+        print(str(x) + " :: " + distanceIndex[x]['url'] + " :: " + str(distanceIndex[x]['lunch']) + ", " + str(distanceIndex[x]['dinner']) + " $$ " + str(distanceIndex[x]['lmax']) + ", " + str(distanceIndex[x]['dmax']))
     restaurantInfo.truncate(0)
     restaurantInfo.write(json.dumps(restaurantInfoJson, indent=4, separators=(',', ': '), ensure_ascii=False))
 
@@ -161,5 +198,12 @@ def parse(args):
         plyFile.write(item + "\n")    
 
     plyFile.close()
+
+
+def getVectorDistance(a, b):
+    lon = float(a["longitude"]) - float(b["longitude"])
+    lat = float(a["latitude"]) - float(b["latitude"])
+
+    return math.sqrt((lon * lon) + (lat * lat))
 
 dict = parse(0)
