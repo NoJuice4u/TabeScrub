@@ -27,7 +27,7 @@ SHOP_SORT_ORDER = {}
 REVIEWER_INDEX = {}
 distanceIndex = {}
 
-def parse(args):
+def parse(args, coords):
     restaurant_tree = {}
     reviewerIndex = 0
     list = []
@@ -84,121 +84,133 @@ def parse(args):
     restaurantInfo = open("data\\restaurantInfo.json", "a+", encoding="utf-8")
     restaurantInfo.seek(0)
     restaurantInfoJson = json.loads(restaurantInfo.read())
-    for depthId in sorted(SHOP_SORT_ORDER, reverse=True):
-        if(depthId <= 1):
-            break
-        for shop in SHOP_SORT_ORDER[depthId]:
-            for reviewer in restaurant_tree[shop]:
-                if shop not in restaurantInfoJson:
-                    result = parser_restaurant.parseRestaurantURL(restaurant_tree[shop][reviewer]['url'])
-                    restaurantInfoJson[shop] = result
-                    time.sleep(1)
-                    # IND
-                priceColor = 0
-                greenStr = 0
+    incr = 0
 
-                # print(str(len(restaurant_tree[shop])) + " : " + shop + "-" + reviewer + "::" + str(restaurant_tree[shop][reviewer]))
-                list.append(str(xPos * X_WIDTH) + " " + str(-1) + " " + str(REVIEWER_INDEX[reviewer] * 0.25) + " 0.5 0.5 0 1 " + str(255) + " " + str(0) + " " + str(0) + " ")
+    try:
+        for depthId in sorted(SHOP_SORT_ORDER, reverse=True):
+            if(depthId <= 1):
+                break
+            for shop in SHOP_SORT_ORDER[depthId]:
+                incr += 1
+                for reviewer in restaurant_tree[shop]:
+                    if shop not in restaurantInfoJson:
+                        print(str(incr) + " - " + str(len(restaurant_tree)))
+                        result = parser_restaurant.parseRestaurantURL(restaurant_tree[shop][reviewer]['url'])
+                        restaurantInfoJson[shop] = result
+                        time.sleep(1)
+                    priceColor = 0
+                    greenStr = 0
 
-                for mealTime in MEALTIME_TABLE:
-                    if(mealTime not in restaurant_tree[shop][reviewer]):
-                        continue
+                    # print(str(len(restaurant_tree[shop])) + " : " + shop + "-" + reviewer + "::" + str(restaurant_tree[shop][reviewer]))
+                    list.append(str(xPos * X_WIDTH) + " " + str(-1) + " " + str(REVIEWER_INDEX[reviewer] * 0.25) + " 0.5 0.5 0 1 " + str(255) + " " + str(0) + " " + str(0) + " ")
 
-                    if("price_min" in restaurant_tree[shop][reviewer][mealTime]):
-                        if(restaurant_tree[shop][reviewer][mealTime]["price_min"] >= 0):
-                            priceColor = 0
-                            greenStr = 128
-                        if(restaurant_tree[shop][reviewer][mealTime]["price_min"] > 2000):
-                            priceColor = 0
-                            greenStr = 255
-                        if(restaurant_tree[shop][reviewer][mealTime]["price_min"] > 3000):
-                            priceColor = 128
-                            greenStr = 255
-                        if(restaurant_tree[shop][reviewer][mealTime]["price_min"] > 5000):
-                            priceColor = 255
-                            greenStr = 255
-                        if(restaurant_tree[shop][reviewer][mealTime]["price_min"] > 10000):
-                            priceColor = 255
-                            greenStr = 0
-
-                    for rating in restaurant_tree[shop][reviewer][mealTime]:
-                        if(rating not in MAP_TABLE):
+                    for mealTime in MEALTIME_TABLE:
+                        if(mealTime not in restaurant_tree[shop][reviewer]):
                             continue
 
-                        blue = 0
-                        overallOffset = 0
-                        if(rating == "overall"):
-                            overallOffset = 0.15
+                        if("price_min" in restaurant_tree[shop][reviewer][mealTime]):
+                            if(restaurant_tree[shop][reviewer][mealTime]["price_min"] >= 0):
+                                priceColor = 0
+                                greenStr = 128
+                            if(restaurant_tree[shop][reviewer][mealTime]["price_min"] > 2000):
+                                priceColor = 0
+                                greenStr = 255
+                            if(restaurant_tree[shop][reviewer][mealTime]["price_min"] > 3000):
+                                priceColor = 128
+                                greenStr = 255
+                            if(restaurant_tree[shop][reviewer][mealTime]["price_min"] > 5000):
+                                priceColor = 255
+                                greenStr = 255
+                            if(restaurant_tree[shop][reviewer][mealTime]["price_min"] > 10000):
+                                priceColor = 255
+                                greenStr = 0
 
-                        value = float(restaurant_tree[shop][reviewer][mealTime][rating])
+                        for rating in restaurant_tree[shop][reviewer][mealTime]:
+                            if(rating not in MAP_TABLE):
+                                continue
 
-                        if(value == -1):
-                            value = -0.5
-                            color = 0
-                        if(value > 5):
-                            color = 255
+                            blue = 0
+                            overallOffset = 0
+                            if(rating == "overall"):
+                                overallOffset = 0.15
 
-                        list.append(str(xPos * X_WIDTH) + " " + str(value) + " " + str((REVIEWER_INDEX[reviewer] * 0.25) + overallOffset) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(greenStr) + " " + str(blue) + " ")
-            # print(shop.ljust(30) + " :: " + str(len(restaurant_tree[shop])))
+                            value = float(restaurant_tree[shop][reviewer][mealTime][rating])
 
-            distance = getVectorDistance(restaurantInfoJson[shop], COORDINATES)
-            reviewer = next(iter(restaurant_tree[shop].keys()))
-            distanceIndex[distance] = { "url": restaurant_tree[shop][reviewer]['url'], "name": shop}
-            xPos += 1
-        xPos += GROUP_WIDTH
+                            if(value == -1):
+                                value = -0.5
+                                color = 0
+                            if(value > 5):
+                                color = 255
 
-    for x in sorted(distanceIndex):
-        lunch_review = []
-        lunch_price_min = []
-        lunch_price_max = []
-        dinner_review = []
-        dinner_price_min = []
-        dinner_price_max = []
+                            list.append(str(xPos * X_WIDTH) + " " + str(value) + " " + str((REVIEWER_INDEX[reviewer] * 0.25) + overallOffset) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(greenStr) + " " + str(blue) + " ")
+                # print(shop.ljust(30) + " :: " + str(len(restaurant_tree[shop])))
 
-        shop = distanceIndex[x]['name']
-        for rvwr in restaurant_tree[shop]:
-            try:
-                if("lunch" in restaurant_tree[shop][rvwr]):
-                    lunch_review.append(restaurant_tree[shop][rvwr]['lunch']['overall'])
-                    lunch_price_min.append(restaurant_tree[shop][rvwr]['lunch']['price_min'])
-                    lunch_price_max.append(restaurant_tree[shop][rvwr]['lunch']['price_max'])
-                elif("dinner" in restaurant_tree[shop][rvwr]):
-                    dinner_review.append(restaurant_tree[shop][rvwr]['dinner']['overall'])
-                    dinner_price_min.append(restaurant_tree[shop][rvwr]['dinner']['price_min'])
-                    dinner_price_max.append(restaurant_tree[shop][rvwr]['dinner']['price_max'])
-                else:
+                distance = getVectorDistance(restaurantInfoJson[shop], coords)
+                reviewer = next(iter(restaurant_tree[shop].keys()))
+                distanceIndex[distance] = { "url": restaurant_tree[shop][reviewer]['url'], "name": shop}
+                xPos += 1
+            xPos += GROUP_WIDTH
+        
+        for x in sorted(distanceIndex):
+            lunch_review = []
+            lunch_price_min = []
+            lunch_price_max = []
+            dinner_review = []
+            dinner_price_min = []
+            dinner_price_max = []
+            categories = set()
+
+            shop = distanceIndex[x]['name']
+            for rvwr in restaurant_tree[shop]:
+                try:
+                    if("lunch" in restaurant_tree[shop][rvwr]):
+                        lunch_review.append(restaurant_tree[shop][rvwr]['lunch']['overall'])
+                        lunch_price_min.append(restaurant_tree[shop][rvwr]['lunch']['price_min'])
+                        lunch_price_max.append(restaurant_tree[shop][rvwr]['lunch']['price_max'])
+                        for cat in restaurant_tree[shop][rvwr]['categories']:
+                            categories.add(cat)
+                    elif("dinner" in restaurant_tree[shop][rvwr]):
+                        dinner_review.append(restaurant_tree[shop][rvwr]['dinner']['overall'])
+                        dinner_price_min.append(restaurant_tree[shop][rvwr]['dinner']['price_min'])
+                        dinner_price_max.append(restaurant_tree[shop][rvwr]['dinner']['price_max'])
+                        for cat in restaurant_tree[shop][rvwr]['categories']:
+                            categories.add(cat)
+                    else:
+                        pass
+                except:
                     pass
-            except:
-                pass
-        distanceIndex[x]['lunch'] = lunch_review
-        distanceIndex[x]['dinner'] = dinner_review
-        distanceIndex[x]['lmax'] = lunch_price_max
-        distanceIndex[x]['dmax'] = dinner_price_max
+            distanceIndex[x]['lunch'] = lunch_review
+            distanceIndex[x]['dinner'] = dinner_review
+            distanceIndex[x]['lmax'] = lunch_price_max
+            distanceIndex[x]['dmax'] = dinner_price_max
+            distanceIndex[x]['categories'] = categories
+            
+            # print(str(x) + " :: " + distanceIndex[x]['url'] + " :: " + str(distanceIndex[x]['lunch']) + ", " + str(distanceIndex[x]['dinner']) + " $$ " + str(distanceIndex[x]['lmax']) + ", " + str(distanceIndex[x]['dmax']))
+        
+    finally:
+        restaurantInfo.truncate(0)
+        restaurantInfo.write(json.dumps(restaurantInfoJson, indent=4, separators=(',', ': '), ensure_ascii=False))
 
-        print(str(x) + " :: " + distanceIndex[x]['url'] + " :: " + str(distanceIndex[x]['lunch']) + ", " + str(distanceIndex[x]['dinner']) + " $$ " + str(distanceIndex[x]['lmax']) + ", " + str(distanceIndex[x]['dmax']))
-    restaurantInfo.truncate(0)
-    restaurantInfo.write(json.dumps(restaurantInfoJson, indent=4, separators=(',', ': '), ensure_ascii=False))
+        plyFile = open("data\\output.ply", 'w')
+        plyFile.write("ply\n")
+        plyFile.write("format ascii 1.0\n")
+        plyFile.write("element vertex " + str(len(list)) + "\n")
+        plyFile.write("property float x\n")
+        plyFile.write("property float y\n")
+        plyFile.write("property float z\n")
+        plyFile.write("property float nx\n")
+        plyFile.write("property float ny\n")
+        plyFile.write("property float nz\n")
+        plyFile.write("property float intensity\n")
+        plyFile.write("property uchar red\n")
+        plyFile.write("property uchar green\n")
+        plyFile.write("property uchar blue\n")
+        plyFile.write("end_header\n")
+        for item in list:
+            plyFile.write(item + "\n")    
 
-    plyFile = open("data\\output.ply", 'w')
-    plyFile.write("ply\n")
-    plyFile.write("format ascii 1.0\n")
-    plyFile.write("element vertex " + str(len(list)) + "\n")
-    plyFile.write("property float x\n")
-    plyFile.write("property float y\n")
-    plyFile.write("property float z\n")
-    plyFile.write("property float nx\n")
-    plyFile.write("property float ny\n")
-    plyFile.write("property float nz\n")
-    plyFile.write("property float intensity\n")
-    plyFile.write("property uchar red\n")
-    plyFile.write("property uchar green\n")
-    plyFile.write("property uchar blue\n")
-    plyFile.write("end_header\n")
-    for item in list:
-        plyFile.write(item + "\n")    
-
-    plyFile.close()
-
+        plyFile.close()
+    return distanceIndex
 
 def getVectorDistance(a, b):
     lon = float(a["longitude"]) - float(b["longitude"])
@@ -206,4 +218,4 @@ def getVectorDistance(a, b):
 
     return math.sqrt((lon * lon) + (lat * lat))
 
-dict = parse(0)
+dict = parse(0, COORDINATES)

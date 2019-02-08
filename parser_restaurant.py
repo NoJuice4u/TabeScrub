@@ -20,7 +20,10 @@ def findCoords(content):
     coordsEnd = content.find("&amp;", coordsStart)
 
     coords = content[coordsStart:coordsEnd].split(",")
-    return {"longitude": coords[0], "latitude": coords[1]}
+    try:
+        return {"longitude": float(coords[0]), "latitude": float(coords[1])}
+    except:
+        return {"longitude": 0.0, "latitude": 0.0}
 
     # resultTable = parseDivs(contents)
 
