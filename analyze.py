@@ -6,7 +6,7 @@ import math
 import json
 import time
 import re
-import parser_restaurant
+from . import parser_restaurant
 
 MEALTIME_TABLE = {"lunch", "dinner"}
 MAP_TABLE = {
@@ -22,12 +22,12 @@ COORDINATES = {"longitude": 35.6863146, "latitude": 139.6877746}
 X_WIDTH = 0.02
 GROUP_WIDTH = 50
 
-SHOP_INDEX = {}
-SHOP_SORT_ORDER = {}
-REVIEWER_INDEX = {}
-distanceIndex = {}
-
 def parse(args, coords):
+    SHOP_INDEX = {}
+    SHOP_SORT_ORDER = {}
+    REVIEWER_INDEX = {}
+    distanceIndex = {}
+
     restaurant_tree = {}
     reviewerIndex = 0
     list = []
@@ -218,4 +218,4 @@ def getVectorDistance(a, b):
 
     return math.sqrt((lon * lon) + (lat * lat))
 
-dict = parse(0, COORDINATES)
+# dict = parse(0, COORDINATES)
