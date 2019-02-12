@@ -1,4 +1,4 @@
-from os import walk
+import os
 import argparse
 import math
 import requests
@@ -7,6 +7,7 @@ import json
 import time
 import re
 from . import parser_restaurant
+from . import scan
 
 MEALTIME_TABLE = {"lunch", "dinner"}
 MAP_TABLE = {
@@ -22,7 +23,7 @@ COORDINATES = {"longitude": 35.6863146, "latitude": 139.6877746}
 X_WIDTH = 0.02
 GROUP_WIDTH = 50
 
-def parse(args, coords):
+def parse(args, coords, userList, tabebot):
     SHOP_INDEX = {}
     SHOP_SORT_ORDER = {}
     REVIEWER_INDEX = {}
@@ -31,47 +32,47 @@ def parse(args, coords):
     restaurant_tree = {}
     reviewerIndex = 0
     list = []
-    j = 0
     
-    for (dirpath, dirnames, filenames) in walk("data\\"):
-    
-        for file in filenames:
-            if(file == "restaurantInfo.json"):
-                continue
-            if(file[-5:] == '.json'):
-                readFile = open("data\\" + file, encoding="utf-8")
-                
-                fileJson = json.loads(readFile.read())
-                for shop in fileJson:
-                    for reviewer in fileJson[shop]:
-                        for mealTime in fileJson[shop][reviewer]:
-                            if(reviewer not in REVIEWER_INDEX):
-                                REVIEWER_INDEX[reviewer] = reviewerIndex
+    for reviewer in userList:
+        fName = "data\\" + reviewer + ".json"
+        
+        if not os.path.exists(fName):
+            tabebot.announce("Processing: " + fName)
+            print("Process Reviewer")
+            scan.parseReviewer("", reviewer)
+        print("ReviewerDone: " + reviewer)
 
-                                list.append("-1 0 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-                                list.append("-1 1 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-                                list.append("-1 2 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-                                list.append("-1 3 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-                                list.append("-1 4 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
-                                list.append("-1 5 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+        readFile = open(fName, encoding="utf-8") 
+        fileJson = json.loads(readFile.read())
+        for shop in fileJson:
+            for reviewer in fileJson[shop]:
+                for mealTime in fileJson[shop][reviewer]:
+                    if(reviewer not in REVIEWER_INDEX):
+                        REVIEWER_INDEX[reviewer] = reviewerIndex
 
-                                reviewerIndex += 1
+                        list.append("-1 0 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                        list.append("-1 1 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                        list.append("-1 2 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                        list.append("-1 3 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                        list.append("-1 4 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
+                        list.append("-1 5 " + str(reviewerIndex * 0.25) + " 0.5 0.5 0 1 0 128 255 ")
 
-                            try:
-                                restaurant_tree[shop]
-                            except:
-                                restaurant_tree[shop] = {}
+                        reviewerIndex += 1
 
-                            try:
-                                restaurant_tree[shop][reviewer]
-                            except:
-                                restaurant_tree[shop][reviewer] = fileJson[shop][reviewer]
+                    try:
+                        restaurant_tree[shop]
+                    except:
+                        restaurant_tree[shop] = {}
 
-                    if(shop not in SHOP_INDEX):
-                        SHOP_INDEX[shop] = 1
-                    else:
-                        SHOP_INDEX[shop] += 1
-            j += 1
+                    try:
+                        restaurant_tree[shop][reviewer]
+                    except:
+                        restaurant_tree[shop][reviewer] = fileJson[shop][reviewer]
+
+            if(shop not in SHOP_INDEX):
+                SHOP_INDEX[shop] = 1
+            else:
+                SHOP_INDEX[shop] += 1
 
     for shop in SHOP_INDEX:
         try:

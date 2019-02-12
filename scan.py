@@ -15,12 +15,6 @@ mealTimes = {"lunch", "dinner"}
 
 SEGMENT_MAP = []
 
-parser = argparse.ArgumentParser(description='Tabelog User Review Scanner')
-parser.add_argument('--user', required=True)
-parser.add_argument('--test', required=False, default=False, type=bool)
-
-args = parser.parse_args()
-
 # Go through every byte in the file.  This is to extract the braces to isolate each item
 # Creates a dictionary to allow traversal.  Ignore items in blackList due to difficulty of parsing.
 def process(configString, restaurant_tree, list, page):
@@ -178,31 +172,25 @@ def process(configString, restaurant_tree, list, page):
             
     return i
 
-def parse(file, args):
+def parseReviewer(file, user):
     restaurant_tree = {}
 
     page = 1
     list = ["0 0 0 0.5 0.5 0 1 0 0 0 ", "0 1 0 0.5 0.5 0 1 0 0 0 ", "0 2 0 0.5 0.5 0 1 0 0 0 ", "0 3 0 0.5 0.5 0 1 0 0 0 ", "0 4 0 0.5 0.5 0 1 0 0 0 ", "0 5 0 0.5 0.5 0 1 0 0 0 "]
-    if(args.test == True):
-        file = open("data/test.html", 'r', encoding='utf-8')
-        contents = file.read()
-
+    while(True):
+        r = requests.get("https://tabelog.com/rvwr/" + user + "/reviewed_restaurants/list/?bookmark_type=1&sk=&sw=&Srt=D&SrtT=mfav&review_content_exist=0&PG=" + str(page))
+        contents = r.text
+    
+        #file = open(file, 'r', encoding='utf-8')
+        #fileContents = file.read()
         result = process(contents, restaurant_tree, list, page)
-    else:
-        while(True):
-            r = requests.get("https://tabelog.com/rvwr/" + args.user + "/reviewed_restaurants/list/?bookmark_type=1&sk=&sw=&Srt=D&SrtT=mfav&review_content_exist=0&PG=" + str(page))
-            contents = r.text
-        
-            #file = open(file, 'r', encoding='utf-8')
-            #fileContents = file.read()
-            result = process(contents, restaurant_tree, list, page)
-            page += 1
-            print("Page [" + str(page) + "].  Results Found: [" + str(result) + "]")
+        page += 1
+        print("Page [" + str(page) + "].  Results Found: [" + str(result) + "]")
 
-            if(result < 20):
-                break
+        if(result < 20):
+            break
 
-    writeFile = open("data\\" + args.user + ".json", 'w', encoding="utf-8")
+    writeFile = open("data\\" + user + ".json", 'w', encoding="utf-8")
     writeFile.write(json.dumps(restaurant_tree, indent=4, separators=(',', ': '), ensure_ascii=False))
     writeFile.close()
     return result
@@ -216,5 +204,3 @@ def extract(currentDiv,  classIdentifier, element):
         return currentDiv[ratingPos:ratingEnd]
 
     return None
-
-dict = parse("tabelog.html", args)
