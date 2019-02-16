@@ -88,6 +88,11 @@ def parse(args, coords, userList, tabebot):
     incr = 0
 
     try:
+        total = 0
+        for depthId in sorted(SHOP_SORT_ORDER, reverse=True):
+            if(depthId <= 1):
+                break
+            total += len(SHOP_SORT_ORDER[depthId])
         for depthId in sorted(SHOP_SORT_ORDER, reverse=True):
             if(depthId <= 1):
                 break
@@ -95,7 +100,7 @@ def parse(args, coords, userList, tabebot):
                 incr += 1
                 for reviewer in restaurant_tree[shop]:
                     if shop not in restaurantInfoJson:
-                        print(str(incr) + " - " + str(len(restaurant_tree)))
+                        print(str(incr) + " - " + str(total))
                         result = parser_restaurant.parseRestaurantURL(restaurant_tree[shop][reviewer]['url'])
                         restaurantInfoJson[shop] = result
                         time.sleep(1)
