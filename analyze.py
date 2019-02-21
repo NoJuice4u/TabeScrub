@@ -102,6 +102,7 @@ def parse(args, coords, userList, tabebot):
                     if shop not in restaurantInfoJson:
                         print(str(incr) + " - " + str(total))
                         result = parser_restaurant.parseRestaurantURL(restaurant_tree[shop][reviewer]['url'])
+                        print(result)
                         restaurantInfoJson[shop] = result
                         time.sleep(1)
                     priceColor = 0
@@ -183,8 +184,11 @@ def parse(args, coords, userList, tabebot):
                             categories.add(cat)
                     else:
                         pass
-                except:
+                except Exception as e:
+                    print("EXCEPTION")
+                    print(e)
                     pass
+                    
             distanceIndex[x]['lunch'] = lunch_review
             distanceIndex[x]['dinner'] = dinner_review
             distanceIndex[x]['lmax'] = lunch_price_max
@@ -192,7 +196,10 @@ def parse(args, coords, userList, tabebot):
             distanceIndex[x]['categories'] = categories
             
             # print(str(x) + " :: " + distanceIndex[x]['url'] + " :: " + str(distanceIndex[x]['lunch']) + ", " + str(distanceIndex[x]['dinner']) + " $$ " + str(distanceIndex[x]['lmax']) + ", " + str(distanceIndex[x]['dmax']))
-        
+    except Exception as e:
+        print("DDD")
+        print(e)
+        raise e
     finally:
         restaurantInfo.truncate(0)
         restaurantInfo.write(json.dumps(restaurantInfoJson, indent=4, separators=(',', ': '), ensure_ascii=False))
@@ -219,8 +226,10 @@ def parse(args, coords, userList, tabebot):
     return distanceIndex
 
 def getVectorDistance(a, b):
-    lon = float(a["longitude"]) - float(b["longitude"])
-    lat = float(a["latitude"]) - float(b["latitude"])
+    print(a)
+    print(b)
+    lon = float(a["coords"]["longitude"]) - float(b["coords"]["longitude"])
+    lat = float(a["coords"]["latitude"]) - float(b["coords"]["latitude"])
 
     return math.sqrt((lon * lon) + (lat * lat))
 

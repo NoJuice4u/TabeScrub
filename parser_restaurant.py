@@ -21,16 +21,28 @@ def parseRestaurantComments(url):
     content = r.text
 
     return findReviewers(content)
-
+    
 def findCoords(content):
+    result = {}
     coordsStart = content.find("center=") + 7
     coordsEnd = content.find("&amp;", coordsStart)
 
     coords = content[coordsStart:coordsEnd].split(",")
     try:
-        return {"longitude": float(coords[0]), "latitude": float(coords[1])}
+        result['coords'] = {"longitude": float(coords[0]), "latitude": float(coords[1])}
     except:
-        return {"longitude": 0.0, "latitude": 0.0}
+        result['coords'] = {"longitude": 0.0, "latitude": 0.0}
+        
+    costStart = content.find("class=\"rdheader-budget__price-target\"") + 38
+    costEnd = content.find("<", costStart)
+    result['cost'] = {}
+    result['cost']['lunch'] = content[costStart:costEnd]
+    
+    costStart = content.find("class=\"rdheader-budget__price-target\"", costEnd) + 38
+    costEnd = content.find("<", costStart)
+    result['cost']['dinner'] = content[costStart:costEnd]
+    
+    return result
 
     # resultTable = parseDivs(contents)
 def findReviewers(content):
@@ -73,36 +85,6 @@ def extractDivs(contents, search):
             braceCount += 1
 
             tagPosition = contents.find(search, indexPos, indexPos+127)
-            if(tagPosition > 0):
-                braceCount = 0
-                positionMap.append({"start": tagPosition - 5, "end": -1})
-                pos = tagPosition + 2
-
-        elif(contents[indexPos+len(TAG_SEARCH)] == ">"):
-            braceCount -= 1
-            if(braceCount == 1 and len(positionMap) > 0):
-                positionMap[len(positionMap)-1]["end"] = indexPos + 4
-            endPos = indexPos + len(TAG_SEARCH) + 1
-
-    return positionMap
-
-
-def parseDivs(contents):
-    pos = 0
-    indexPos = 0
-    braceCount = 0
-    positionMap = []
-
-    while(True):
-        indexPos = contents.find(TAG_SEARCH, pos)
-        if(indexPos == -1):
-            break
-        pos = indexPos + 2
-        
-        if(contents[indexPos-1] == "<"):
-            braceCount += 1
-
-            tagPosition = contents.find("class=\"rstinfo-table\"", indexPos, indexPos+127)
             if(tagPosition > 0):
                 braceCount = 0
                 positionMap.append({"start": tagPosition - 5, "end": -1})
