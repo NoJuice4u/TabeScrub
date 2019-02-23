@@ -1,5 +1,8 @@
 import requests
 
+from logger import logger as Logger
+
+## TODO: restaurant status:: rst-status-badge-large rst-st-closed
 TAG_SEARCH = "div"
 
 def parseRestaurantFile(file):
@@ -9,14 +12,13 @@ def parseRestaurantFile(file):
     return findCoords(content)
 
 def parseRestaurantURL(url):
-    print("PROCESSING: " + url)
     r = requests.get(url)
     content = r.text
 
     return findCoords(content)
     
 def parseRestaurantComments(url):
-    print(url)
+    Logger.log("ParseRestaurantComments", url)
     r = requests.get(url)
     content = r.text
 
@@ -49,13 +51,12 @@ def findReviewers(content):
     resultTable = extractDivs(content, "class=\"rvw-item js-rvw-item-clickable-area\"")
     reviewerTable = {}
     
-    print(resultTable)
     for pos in resultTable:
         elementDiv = content[pos['start']:pos['end']]
         rvwrPos_Start = elementDiv.find("href=\"/rvwr") + 12
         rvwrPos_End = elementDiv.find("\"", rvwrPos_Start) - 1
         
-        print(str(rvwrPos_Start) + ":" + str(rvwrPos_End))
+        Logger.log("ReviewerPos", str(rvwrPos_Start) + ":" + str(rvwrPos_End))
         reviewer = elementDiv[rvwrPos_Start:rvwrPos_End]
         
         ratingPos_Start = elementDiv.find("c-rating__val c-rating__val--strong")
@@ -65,8 +66,7 @@ def findReviewers(content):
         rating = elementDiv[ratingPos_Start:ratingPos_End]
         
         reviewerTable[reviewer] = rating
-    
-    print(reviewerTable)
+
     return reviewerTable
 
 def extractDivs(contents, search):

@@ -5,7 +5,10 @@ import requests
 import math
 import json
 import time
+import traceback
 import re
+
+from logger import logger as Logger
 from . import parser_restaurant
 from . import scan
 
@@ -38,9 +41,8 @@ def parse(args, coords, userList, tabebot):
         
         if not os.path.exists(fName):
             tabebot.announce("Processing: " + fName)
-            print("Process Reviewer")
             scan.parseReviewer("", reviewer)
-        print("ReviewerDone: " + reviewer)
+        Logger.log("ReviewerScanned", reviewer)
 
         readFile = open(fName, encoding="utf-8") 
         fileJson = json.loads(readFile.read())
@@ -100,9 +102,8 @@ def parse(args, coords, userList, tabebot):
                 incr += 1
                 for reviewer in restaurant_tree[shop]:
                     if shop not in restaurantInfoJson:
-                        print(str(incr) + " - " + str(total))
+                        Logger.log("PARSER " + str(incr) + "/" + str(total), str(shop))
                         result = parser_restaurant.parseRestaurantURL(restaurant_tree[shop][reviewer]['url'])
-                        print(result)
                         restaurantInfoJson[shop] = result
                         time.sleep(1)
                     priceColor = 0
@@ -152,7 +153,10 @@ def parse(args, coords, userList, tabebot):
                             list.append(str(xPos * X_WIDTH) + " " + str(value) + " " + str((REVIEWER_INDEX[reviewer] * 0.25) + overallOffset) + " 0.5 0.5 0 1 " + str(priceColor) + " " + str(greenStr) + " " + str(blue) + " ")
                 # print(shop.ljust(30) + " :: " + str(len(restaurant_tree[shop])))
 
-                distance = getVectorDistance(restaurantInfoJson[shop], coords)
+                try:
+                    distance = getVectorDistance(restaurantInfoJson[shop]["coords"], coords)
+                except:
+                    Logger.log("EXC:", str(restaurantInfoJson[shop]))
                 reviewer = next(iter(restaurant_tree[shop].keys()))
                 distanceIndex[distance] = { "url": restaurant_tree[shop][reviewer]['url'], "name": shop}
                 xPos += 1
@@ -169,24 +173,25 @@ def parse(args, coords, userList, tabebot):
 
             shop = distanceIndex[x]['name']
             for rvwr in restaurant_tree[shop]:
-                try:
-                    if("lunch" in restaurant_tree[shop][rvwr]):
+                if("lunch" in restaurant_tree[shop][rvwr]):
+                    try:
                         lunch_review.append(restaurant_tree[shop][rvwr]['lunch']['overall'])
                         lunch_price_min.append(restaurant_tree[shop][rvwr]['lunch']['price_min'])
                         lunch_price_max.append(restaurant_tree[shop][rvwr]['lunch']['price_max'])
                         for cat in restaurant_tree[shop][rvwr]['categories']:
                             categories.add(cat)
-                    elif("dinner" in restaurant_tree[shop][rvwr]):
+                    except Exception as e:
+                        pass
+                elif("dinner" in restaurant_tree[shop][rvwr]):
+                    try:
                         dinner_review.append(restaurant_tree[shop][rvwr]['dinner']['overall'])
                         dinner_price_min.append(restaurant_tree[shop][rvwr]['dinner']['price_min'])
                         dinner_price_max.append(restaurant_tree[shop][rvwr]['dinner']['price_max'])
                         for cat in restaurant_tree[shop][rvwr]['categories']:
                             categories.add(cat)
-                    else:
+                    except Exception as e:
                         pass
-                except Exception as e:
-                    print("EXCEPTION")
-                    print(e)
+                else:
                     pass
                     
             distanceIndex[x]['lunch'] = lunch_review
@@ -197,8 +202,6 @@ def parse(args, coords, userList, tabebot):
             
             # print(str(x) + " :: " + distanceIndex[x]['url'] + " :: " + str(distanceIndex[x]['lunch']) + ", " + str(distanceIndex[x]['dinner']) + " $$ " + str(distanceIndex[x]['lmax']) + ", " + str(distanceIndex[x]['dmax']))
     except Exception as e:
-        print("DDD")
-        print(e)
         raise e
     finally:
         restaurantInfo.truncate(0)
@@ -226,10 +229,13 @@ def parse(args, coords, userList, tabebot):
     return distanceIndex
 
 def getVectorDistance(a, b):
-    print(a)
-    print(b)
-    lon = float(a["coords"]["longitude"]) - float(b["coords"]["longitude"])
-    lat = float(a["coords"]["latitude"]) - float(b["coords"]["latitude"])
+    try:
+        lon = float(a["longitude"]) - float(b["longitude"])
+        lat = float(a["latitude"]) - float(b["latitude"])
+    except:
+        Logger.log("EXCEPTION - INPUT a", str(a))
+        Logger.log("EXCEPTION - INPUT b", str(b))
+        Logger.log("EXCEPTION", str(traceback.format_exc()))
 
     return math.sqrt((lon * lon) + (lat * lat))
 
