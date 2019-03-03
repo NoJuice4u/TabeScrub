@@ -4,6 +4,8 @@ import json
 import time
 import re
 
+from logger import logger as Logger
+
 TAG_SEARCH = "div"
 
 # Can I use function pointers here?
@@ -185,7 +187,7 @@ def parseReviewer(file, user):
         #fileContents = file.read()
         result = process(contents, restaurant_tree, list, page)
         page += 1
-        print("Page [" + str(page) + "].  Results Found: [" + str(result) + "]")
+        Logger.log("ParseReviewer", "Page [" + str(page) + "].  Results Found: [" + str(result) + "]")
 
         if(result < 20):
             break

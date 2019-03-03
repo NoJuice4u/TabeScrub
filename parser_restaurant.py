@@ -26,6 +26,10 @@ def parseRestaurantComments(url):
     
 def findCoords(content):
     result = {}
+    if(content.find("rst-st-closed") > 0):
+        Logger.log("CLOSED", ".")
+        result['status'] = "closed"
+        
     coordsStart = content.find("center=") + 7
     coordsEnd = content.find("&amp;", coordsStart)
 
@@ -45,7 +49,7 @@ def findCoords(content):
     result['cost']['dinner'] = content[costStart:costEnd]
     
     return result
-
+    
     # resultTable = parseDivs(contents)
 def findReviewers(content):
     resultTable = extractDivs(content, "class=\"rvw-item js-rvw-item-clickable-area\"")

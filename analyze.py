@@ -95,13 +95,24 @@ def parse(args, coords, userList, tabebot):
             if(depthId <= 1):
                 break
             total += len(SHOP_SORT_ORDER[depthId])
+
+        checkpoint = 0
+        segment = int(total / 4)
+
         for depthId in sorted(SHOP_SORT_ORDER, reverse=True):
             if(depthId <= 1):
                 break
             for shop in SHOP_SORT_ORDER[depthId]:
                 incr += 1
+
                 for reviewer in restaurant_tree[shop]:
                     if shop not in restaurantInfoJson:
+
+                        if checkpoint * segment < incr:
+                            Logger.log("PROGRESS", str(incr) + "/" + str(total))
+                            tabebot.announce("Progress " + str(incr) + "/" + str(total))
+                            checkpoint += 1
+                            
                         Logger.log("PARSER " + str(incr) + "/" + str(total), str(shop))
                         result = parser_restaurant.parseRestaurantURL(restaurant_tree[shop][reviewer]['url'])
                         restaurantInfoJson[shop] = result
