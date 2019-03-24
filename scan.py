@@ -87,7 +87,7 @@ def process(configString, restaurant_tree, list, page):
 
             ratingPos = segment.find(">", ratingPos) + 1
             ratingEnd = segment.find("<", ratingPos)
-            restaurant_name = segment[ratingPos:ratingEnd]
+            restaurant_name = segment[ratingPos:ratingEnd].strip()
 
             restaurant_tree[restaurant_name] = {}
             restaurant_tree[restaurant_name][reviewer_name] = {}

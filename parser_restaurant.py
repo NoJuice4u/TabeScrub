@@ -12,13 +12,14 @@ def parseRestaurantFile(file):
     return findCoords(content)
 
 def parseRestaurantURL(url):
+    Logger.log("parseRestaurantURL", url)
     r = requests.get(url)
     content = r.text
 
     return findCoords(content)
     
 def parseRestaurantComments(url):
-    Logger.log("ParseRestaurantComments", url)
+    Logger.log("parseRestaurantComments", url)
     r = requests.get(url)
     content = r.text
 

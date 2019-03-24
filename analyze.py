@@ -47,6 +47,8 @@ def parse(args, coords, userList, tabebot):
         readFile = open(fName, encoding="utf-8") 
         fileJson = json.loads(readFile.read())
         for shop in fileJson:
+            shop.strip('\n').strip()
+            print(shop)
             for reviewer in fileJson[shop]:
                 for mealTime in fileJson[shop][reviewer]:
                     if(reviewer not in REVIEWER_INDEX):
@@ -112,9 +114,11 @@ def parse(args, coords, userList, tabebot):
                             Logger.log("PROGRESS", str(incr) + "/" + str(total))
                             tabebot.announce("Progress " + str(incr) + "/" + str(total))
                             checkpoint += 1
-                            
-                        Logger.log("PARSER " + str(incr) + "/" + str(total), str(shop))
-                        result = parser_restaurant.parseRestaurantURL(restaurant_tree[shop][reviewer]['url'])
+
+                        try:
+                            result = parser_restaurant.parseRestaurantURL(restaurant_tree[shop][reviewer]['url'])
+                        except:
+                            continue
                         restaurantInfoJson[shop] = result
                         time.sleep(1)
                     priceColor = 0
